@@ -1,11 +1,14 @@
 package protocol
 
 import (
-	"io"
-	"strings"
-	"errors"
-	"unicode/utf8"
 	"bytes"
+	"encoding/binary"
+	"errors"
+	"github.com/Tnze/go-mc/nbt"
+	"io"
+	"math"
+	"strings"
+	"unicode/utf8"
 )
 
 func readBoolean(r io.Reader) (bool, error) {
@@ -40,8 +43,13 @@ func readUnsignedByte(r io.Reader) (uint8, error) {
 }
 
 func readShort(r io.Reader) (int16, error) {
-	panic("readShort")
-	return 0, nil
+	temp := make([]byte, 2)
+	_, err := r.Read(temp)
+	if err != nil {
+		return 0, nil
+	}
+
+	return int16(binary.BigEndian.Uint16(temp)), nil
 }
 
 func readUnsignedShort(r io.Reader) (uint16, error) {
@@ -52,56 +60,65 @@ func readUnsignedShort(r io.Reader) (uint16, error) {
 		return 0, err
 	}
 
-	var result uint16
-	result = uint16(num[0]) << 8
+	result := uint16(num[0]) << 8
 	result |= uint16(num[1])
 
 	return result, nil
 }
 
 func readInt(r io.Reader) (int32, error) {
-	var result int32
 	temp := make([]byte, 4)
 
 	_, err := r.Read(temp)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
-	result = int32(temp[0])
-	result <<= 8
-	result |= int32(temp[1])
-	result <<= 8
-	result |= int32(temp[2])
-	result <<= 8
-	result |= int32(temp[3])
-	
+	result := int32(binary.BigEndian.Uint32(temp))
 	return result, nil
 }
 
 func readLong(r io.Reader) (int64, error) {
-	panic("readLong")
-	return 0, nil
+	temp := make([]byte, 8)
+
+	_, err := r.Read(temp)
+	if err != nil {
+		return 0, err
+	}
+
+	result := int64(binary.BigEndian.Uint64(temp))
+	return result, nil
 }
 
 func readFloat(r io.Reader) (float32, error) {
-	panic("readLong")
-	return 0, nil
+	u, err := readInt(r)
+	if err != nil {
+		return 0, err
+	}
+
+	return math.Float32frombits(uint32(u)), nil
 }
 
 func readDouble(r io.Reader) (float64, error) {
-	panic("readDouble")
-	return 0, nil
+	u, err := readInt(r)
+	if err != nil {
+		return 0, err
+	}
+
+	return math.Float64frombits(uint64(u)), nil
 }
 
-func readString(r interface{io.Reader; io.RuneReader}) (string, error) {
+func readString(r interface {
+	io.Reader
+	io.RuneReader
+}) (string, error) {
 	runes, err := readVarInt(r)
 	if err != nil {
 		return "", err
 	}
 
 	var result string
-	for ;runes > 0; runes-- {
+	for ; runes > 0; runes-- {
 		r, _, err := r.ReadRune()
 		if err != nil {
 			return "", err
@@ -113,85 +130,83 @@ func readString(r interface{io.Reader; io.RuneReader}) (string, error) {
 }
 
 func readChat(r io.Reader) (string, error) {
-	panic("readChat")
-	return "", nil
+	return "", errors.New("Not implemented")
 }
 
-func readIdentifier(r interface{io.Reader; io.RuneReader}) (string, error) {
+func readIdentifier(r interface {
+	io.Reader
+	io.RuneReader
+}) (string, error) {
 	temp, err := readString(r)
 
 	if err != nil {
 		return "", err
 	}
 
-	if strings.Index(temp, ":") == -1 {
+	if !strings.Contains(temp, ":") {
 		return "minecraft:" + temp, nil
-	} 
+	}
 
 	return temp, nil
 }
 
 func readVarInt(r io.Reader) (int32, error) {
-	var (
-		numRead int
-		result	int32
-		read	byte
-		err		error
-	)
-
+	var result uint32
 	buf := make([]byte, 1)
-
-	for ok := true; ok; ok = ((read & 0x80) != 0) { // 0x80 == 0b10000000
-		if _, err = r.Read(buf); err != nil {
-			return 0, err
+	for i := 0; i < 5; i++ {
+		_, err := r.Read(buf)
+		if err != nil {
+			return 0, errors.New("fail")
 		}
+		b := buf[0]
 
-		read = buf[0]
-		value := read & 0x7F // 0x7F == 0b01111111
-		result |= int32(value << uint(7 * numRead))
-
-		numRead++
-		if numRead > 5 {
-			return 0, errors.New("Unable to decode VarInt")
+		result |= (uint32(b&0x7F) << uint(7*i))
+		if b&0x80 == 0 {
+			break
 		}
 	}
 
-	return result, nil
+	return int32(result), nil
 }
 
 func readVarLong(r io.Reader) (int64, error) {
-	panic("readVarLong")
-	return 0, nil
+	return 0, errors.New("not implemented")
 }
 
 func readEntityMetadata(r io.Reader) (string, error) {
-	panic("readEntityMetadata")
-	return "", nil
+	return "", errors.New("not implemented")
 }
 
-func readSlot(r io.Reader) (string ,error) {
-	panic("readSlot")
-	return "", nil
+func readSlot(r io.Reader) (string, error) {
+	return "", errors.New("not implemented")
 }
 
-func readNBTTag(r io.Reader) (string, error) {
-	panic("readNBTTag")
-	return "", nil
+func readNBTTag(r io.Reader) (interface{}, error) {
+	var x interface{}
+	err := nbt.NewDecoder(r).Decode(&x)
+	return x, err
 }
 
-func readPosition(r io.Reader) (string, error) {
-	panic("readPosition")
-	return "", nil
+func readPosition(r io.Reader) (Position, error) {
+	raw, err := readLong(r)
+	if err != nil {
+		return Position{}, err
+	}
+
+	p := Position{
+		X: int(raw >> 38),
+		Y: int(raw & 0xFFF),
+		Z: int(raw << 26 >> 38),
+	}
+	return p, nil
 }
 
 func readAngle(r io.Reader) (byte, error) {
-	panic("readAngle")
-	return 0, nil
+	return 0, errors.New("not implemented")
 }
 
 func readUUID(r io.Reader) (string, error) {
-	panic("readUUID")
-	return "", nil
+	return "", errors.New("not implemented")
 }
 
 func readByteArray(r io.Reader, length int) ([]byte, error) {
@@ -224,40 +239,47 @@ func writeUnsignedByte(w io.Writer, u uint8) error {
 }
 
 func writeShort(w io.Writer, i int16) error {
-	panic("writeShort")
+	temp := make([]byte, 2)
+	binary.BigEndian.PutUint16(temp, uint16(i))
+	_, err := w.Write(temp)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func writeUnsignedShort(w io.Writer, u uint16) error {
-	panic("writeUnsignedShort")
-	return nil
+	var a, b byte = byte(u >> 8), byte(u & 0xFF)
+	_, err := w.Write([]byte{a, b})
+	return err
 }
 
 func writeInt(w io.Writer, i int32) error {
-	var result int32
-	for i := 3; i >= 0; i-- {
-		temp := byte(result >> uint(8 * i))
-		_, err := w.Write([]byte{temp})
-		if err != nil {
-			return err
-		}
+	temp := make([]byte, 4)
+	binary.BigEndian.PutUint32(temp, uint32(i))
+	_, err := w.Write(temp)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func writeLong(w io.Writer, i int64) error {
-	panic("writeLong")
+	temp := make([]byte, 8)
+	binary.BigEndian.PutUint64(temp, uint64(i))
+	_, err := w.Write(temp)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func writeFloat(w io.Writer, f float32) error {
-	panic("writeLong")
-	return nil
+	return writeInt(w, int32(math.Float32bits(f)))
 }
 
 func writeDouble(w io.Writer, f float64) error {
-	panic("writeDouble")
-	return nil
+	return writeLong(w, int64(math.Float64bits(f)))
 }
 
 func writeString(w *bytes.Buffer, s string) error {
@@ -267,7 +289,7 @@ func writeString(w *bytes.Buffer, s string) error {
 
 	if err != nil {
 		return err
-	}	
+	}
 
 	for s != "" {
 		r, l := utf8.DecodeRuneInString(s)
@@ -282,13 +304,11 @@ func writeString(w *bytes.Buffer, s string) error {
 }
 
 func writeChat(w *bytes.Buffer, s string) error {
-	panic("writeChat")
-	return nil
+	return errors.New("not implemented")
 }
 
 func writeIdentifier(w *bytes.Buffer, s string) error {
-	panic("writeIdentifier")
-	return nil
+	return writeString(w, s)
 }
 
 func writeVarInt(w io.Writer, i int32) error {
@@ -296,47 +316,45 @@ func writeVarInt(w io.Writer, i int32) error {
 	for ok := true; ok; ok = (value != 0) {
 		temp := (byte)(value & 0x7F) // 0x7F == 0b01111111
 		value >>= 7
-		if (value != 0) {
+		if value != 0 {
 			temp |= 0x80 // 0x80 == 0b10000000
 		}
-		w.Write([]byte{temp})
+
+		_, err := w.Write([]byte{temp})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func writeVarLong(w io.Writer, i int64) error {
-	panic("writeVarLong")
-	return nil
+	return errors.New("not implemented")
 }
 
 func writeEntityMetadata(w io.Writer, s string) error {
-	panic("writeEntityMetadata")
-	return nil
+	return errors.New("not implemented")
 }
 
 func writeSlot(w io.Writer, s string) error {
-	panic("writeSlot")
-	return nil
+	return errors.New("not implemented")
 }
 
-func writeNBTTag(w io.Writer, s string) error {
-	panic("writeNBTTag")
-	return nil
+func writeNBTTag(w io.Writer, i interface{}) error {
+	return nbt.Marshal(w, i)
 }
 
-func writePosition(w io.Writer, s string) error {
-	panic("writePosition")
-	return nil
+func writePosition(w io.Writer, p Position) error {
+	raw := uint64(((p.X & 0x3FFFFFF) << 38) | ((p.Z & 0x3FFFFFF) << 12) | (p.Y & 0xFF))
+	return writeLong(w, int64(raw))
 }
 
 func writeAngle(w io.Writer, b byte) error {
-	panic("writeAngle")
-	return nil
+	return errors.New("not implemented")
 }
 
 func writeUUID(w io.Writer, s string) error {
-	panic("writeUUID")
-	return nil
+	return errors.New("not implemented")
 }
 
 func writeByteArray(w io.Writer, b []byte) error {

@@ -1,4 +1,3 @@
-
 package protocol
 
 import "reflect"
@@ -7,61 +6,89 @@ import "reflect"
 //go:generate go run ../util/generate_idmap/main.go
 
 func packetToID(direction Direction, state State, packet Packet) int32 {
-ref_type := reflect.TypeOf(packet)
-t := map[State]map[Direction]map[reflect.Type]int32{Handshaking: map[Direction]map[reflect.Type]int32{
-Clientbound: map[reflect.Type]int32{
-},Serverbound: map[reflect.Type]int32{
-reflect.TypeOf(Handshake{}): 0x00,
-},},Status: map[Direction]map[reflect.Type]int32{
-Clientbound: map[reflect.Type]int32{
-reflect.TypeOf(Response{}): 0x00,
-reflect.TypeOf(Pong{}): 0x01,
-},Serverbound: map[reflect.Type]int32{
-reflect.TypeOf(Request{}): 0x00,
-reflect.TypeOf(Ping{}): 0x01,
-},},Login: map[Direction]map[reflect.Type]int32{
-Clientbound: map[reflect.Type]int32{
-reflect.TypeOf(Disconnect{}): 0x00,
-reflect.TypeOf(EncryptionRequest{}): 0x01,
-reflect.TypeOf(LoginSuccess{}): 0x02,
-reflect.TypeOf(SetCompression{}): 0x03,
-},Serverbound: map[reflect.Type]int32{
-reflect.TypeOf(LoginStart{}): 0x00,
-reflect.TypeOf(EncryptionResponse{}): 0x01,
-},},Play: map[Direction]map[reflect.Type]int32{
-Clientbound: map[reflect.Type]int32{
-reflect.TypeOf(Disconnect{}): 0x1A,
-reflect.TypeOf(JoinGame{}): 0x25,
-},Serverbound: map[reflect.Type]int32{
-reflect.TypeOf(ClientSettings{}): 0x05,
-reflect.TypeOf(PluginMessage{}): 0x0b,
-},},}; return t[state][direction][ref_type]}
+	ref_type := reflect.TypeOf(packet)
+	t := map[State]map[Direction]map[reflect.Type]int32{Handshaking: map[Direction]map[reflect.Type]int32{
+		Clientbound: map[reflect.Type]int32{}, Serverbound: map[reflect.Type]int32{
+			reflect.TypeOf(Handshake{}): 0x00,
+		}}, Status: map[Direction]map[reflect.Type]int32{
+		Clientbound: map[reflect.Type]int32{
+			reflect.TypeOf(Response{}): 0x00,
+			reflect.TypeOf(Pong{}):     0x01,
+		}, Serverbound: map[reflect.Type]int32{
+			reflect.TypeOf(Request{}): 0x00,
+			reflect.TypeOf(Ping{}):    0x01,
+		}}, Login: map[Direction]map[reflect.Type]int32{
+		Clientbound: map[reflect.Type]int32{
+			reflect.TypeOf(Disconnect{}):        0x00,
+			reflect.TypeOf(EncryptionRequest{}): 0x01,
+			reflect.TypeOf(LoginSuccess{}):      0x02,
+			reflect.TypeOf(SetCompression{}):    0x03,
+		}, Serverbound: map[reflect.Type]int32{
+			reflect.TypeOf(LoginStart{}):         0x00,
+			reflect.TypeOf(EncryptionResponse{}): 0x01,
+		}}, Play: map[Direction]map[reflect.Type]int32{
+		Clientbound: map[reflect.Type]int32{
+			reflect.TypeOf(Disconnect{}):                       0x1A,
+			reflect.TypeOf(AnimationClientbound{}):             0x06,
+			reflect.TypeOf(SpawnObject{}):                      0x00,
+			reflect.TypeOf(ServerDifficulty{}):                 0x0D,
+			reflect.TypeOf(JoinGame{}):                         0x25,
+			reflect.TypeOf(ChunkData{}):                        0x21,
+			reflect.TypeOf(PlayerAbilities{}):                  0x31,
+			reflect.TypeOf(PlayerPositionAndLookClientbound{}): 0x35,
+			reflect.TypeOf(HeldItemChangeClientbound{}):        0x3f,
+			reflect.TypeOf(SpawnPosition{}):                    0x4d,
+			reflect.TypeOf(PluginMessage{}):                    0x18,
+		}, Serverbound: map[reflect.Type]int32{
+			reflect.TypeOf(TeleportConfirm{}):                  0x00,
+			reflect.TypeOf(ClientStatus{}):                     0x04,
+			reflect.TypeOf(ClientSettings{}):                   0x05,
+			reflect.TypeOf(PluginMessage{}):                    0x0b,
+			reflect.TypeOf(PlayerPositionAndLookServerbound{}): 0x12,
+			reflect.TypeOf(AnimationServerbound{}):             0x2a,
+		}}}
+	return t[state][direction][ref_type]
+}
 func idToPacketType(direction Direction, state State, id int32) reflect.Type {
-t := map[State]map[Direction]map[int32]reflect.Type{Handshaking: map[Direction]map[int32]reflect.Type{
-Clientbound: map[int32]reflect.Type{
-},Serverbound: map[int32]reflect.Type{
-0x00: reflect.TypeOf(Handshake{}),
-},},Status: map[Direction]map[int32]reflect.Type{
-Clientbound: map[int32]reflect.Type{
-0x00: reflect.TypeOf(Response{}),
-0x01: reflect.TypeOf(Pong{}),
-},Serverbound: map[int32]reflect.Type{
-0x00: reflect.TypeOf(Request{}),
-0x01: reflect.TypeOf(Ping{}),
-},},Login: map[Direction]map[int32]reflect.Type{
-Clientbound: map[int32]reflect.Type{
-0x00: reflect.TypeOf(Disconnect{}),
-0x01: reflect.TypeOf(EncryptionRequest{}),
-0x02: reflect.TypeOf(LoginSuccess{}),
-0x03: reflect.TypeOf(SetCompression{}),
-},Serverbound: map[int32]reflect.Type{
-0x00: reflect.TypeOf(LoginStart{}),
-0x01: reflect.TypeOf(EncryptionResponse{}),
-},},Play: map[Direction]map[int32]reflect.Type{
-Clientbound: map[int32]reflect.Type{
-0x1A: reflect.TypeOf(Disconnect{}),
-0x25: reflect.TypeOf(JoinGame{}),
-},Serverbound: map[int32]reflect.Type{
-0x05: reflect.TypeOf(ClientSettings{}),
-0x0b: reflect.TypeOf(PluginMessage{}),
-},},}; return t[state][direction][id]}
+	t := map[State]map[Direction]map[int32]reflect.Type{Handshaking: map[Direction]map[int32]reflect.Type{
+		Clientbound: map[int32]reflect.Type{}, Serverbound: map[int32]reflect.Type{
+			0x00: reflect.TypeOf(Handshake{}),
+		}}, Status: map[Direction]map[int32]reflect.Type{
+		Clientbound: map[int32]reflect.Type{
+			0x00: reflect.TypeOf(Response{}),
+			0x01: reflect.TypeOf(Pong{}),
+		}, Serverbound: map[int32]reflect.Type{
+			0x00: reflect.TypeOf(Request{}),
+			0x01: reflect.TypeOf(Ping{}),
+		}}, Login: map[Direction]map[int32]reflect.Type{
+		Clientbound: map[int32]reflect.Type{
+			0x00: reflect.TypeOf(Disconnect{}),
+			0x01: reflect.TypeOf(EncryptionRequest{}),
+			0x02: reflect.TypeOf(LoginSuccess{}),
+			0x03: reflect.TypeOf(SetCompression{}),
+		}, Serverbound: map[int32]reflect.Type{
+			0x00: reflect.TypeOf(LoginStart{}),
+			0x01: reflect.TypeOf(EncryptionResponse{}),
+		}}, Play: map[Direction]map[int32]reflect.Type{
+		Clientbound: map[int32]reflect.Type{
+			0x1A: reflect.TypeOf(Disconnect{}),
+			0x06: reflect.TypeOf(AnimationClientbound{}),
+			0x00: reflect.TypeOf(SpawnObject{}),
+			0x0D: reflect.TypeOf(ServerDifficulty{}),
+			0x25: reflect.TypeOf(JoinGame{}),
+			0x21: reflect.TypeOf(ChunkData{}),
+			0x31: reflect.TypeOf(PlayerAbilities{}),
+			0x35: reflect.TypeOf(PlayerPositionAndLookClientbound{}),
+			0x3f: reflect.TypeOf(HeldItemChangeClientbound{}),
+			0x4d: reflect.TypeOf(SpawnPosition{}),
+			0x18: reflect.TypeOf(PluginMessage{}),
+		}, Serverbound: map[int32]reflect.Type{
+			0x00: reflect.TypeOf(TeleportConfirm{}),
+			0x04: reflect.TypeOf(ClientStatus{}),
+			0x05: reflect.TypeOf(ClientSettings{}),
+			0x0b: reflect.TypeOf(PluginMessage{}),
+			0x12: reflect.TypeOf(PlayerPositionAndLookServerbound{}),
+			0x2a: reflect.TypeOf(AnimationServerbound{}),
+		}}}
+	return t[state][direction][id]
+}

@@ -1,8 +1,8 @@
 package protocol
 
 import (
-	"testing"
 	"bytes"
+	"testing"
 )
 
 type varIntTestpair struct {
@@ -77,6 +77,121 @@ func TestReadWriteString(t *testing.T) {
 
 		if str != d {
 			t.Fatalf("Read %s (should be %s)", str, d)
+		}
+	}
+}
+
+func TestReadWriteInt(t *testing.T) {
+	tests := []int32{1, -32, 16000}
+
+	for _, d := range tests {
+		buf := make([]byte, 0)
+		writer := bytes.NewBuffer(buf)
+
+		err := writeInt(writer, d)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		reader := bytes.NewReader(writer.Bytes())
+
+		str, err := readInt(reader)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		if str != d {
+			t.Fatalf("Read %d (should be %d)", str, d)
+		}
+	}
+}
+
+func TestReadWritePosition(t *testing.T) {
+	tests := []Position{Position{100, 100, 100}}
+
+	for _, d := range tests {
+		buf := make([]byte, 0)
+		writer := bytes.NewBuffer(buf)
+
+		err := writePosition(writer, d)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		reader := bytes.NewReader(writer.Bytes())
+
+		pos, err := readPosition(reader)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		if pos != d {
+			t.Fatalf("Read %d (should be %d)", pos, d)
+		}
+	}
+}
+
+func TestReadWriteNBT(t *testing.T) {
+	tests := []interface{}{
+		struct {
+			Name string `nbt:"name"`
+		}{"test"},
+		struct {
+			ID int `nbt:"id"`
+		}{22},
+	}
+
+	for _, d := range tests {
+		buf := make([]byte, 0)
+		writer := bytes.NewBuffer(buf)
+
+		err := writeNBTTag(writer, d)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		reader := bytes.NewReader(writer.Bytes())
+
+		nbt, err := readNBTTag(reader)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		if nbt != d {
+			t.Fatalf("Read %+v (should be %+v)", nbt, d)
+		}
+	}
+}
+
+func TestReadWriteUnsignedShort(t *testing.T) {
+	tests := []uint16{0, 255, 16000}
+
+	for _, d := range tests {
+		buf := make([]byte, 0)
+		writer := bytes.NewBuffer(buf)
+
+		err := writeUnsignedShort(writer, d)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		reader := bytes.NewReader(writer.Bytes())
+
+		short, err := readUnsignedShort(reader)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		if short != d {
+			t.Fatalf("Read %d (should be %d)", short, d)
 		}
 	}
 }
