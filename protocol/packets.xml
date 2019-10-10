@@ -1,0 +1,1076 @@
+<packets>
+    <!-- Serverbound Handshaking -->
+    <packet generator="on">
+        <name>Handshake</name>
+        <description>
+                This causes the server to switch into the target state.
+        </description>
+        <id direction="Serverbound" state="Handshaking">
+            <hex>0x00</hex>
+        </id>
+        <field type="VarInt">
+            <name>ProtocolVersion</name>
+            <description>
+                    See protocol version numbers
+                    (https://wiki.vg/Protocol_version_numbers)
+                    (currently 498 in Minecraft 1.14.4)
+            </description>
+        </field>
+        <field type="String">
+            <name>ServerAddress</name>
+            <description>
+                    Hostname or IP, e.g. localhost or 127.0.0.1, that was used to
+                    connect. The Notchian server does not use this information.
+                    Note that SRV records are a complete redirect, e.g. if 
+                    _minecraft._tcp.example.com points to mc.example.org, users
+                    connecting to example.com will provide mc.example.org as
+                    server address in addition to connecting to it.
+            </description>
+        </field>
+        <field type="UnsignedShort">
+            <name>ServerPort</name>
+            <description>
+                    Default is 25565. The Notchian server does not use this information.
+            </description>
+        </field>
+        <field type="VarInt">
+            <name>NextState</name>
+            <description>
+                    1 for status, 2 for login
+            </description>
+        </field>
+    </packet>
+
+    <!-- Clientbound Status -->
+    <packet generator="on">
+        <name>Response</name>
+        <id direction="Clientbound" state="Status">
+            <hex>0x00</hex>
+        </id>
+        <field type="String">
+            <name>JSONResponse</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>Pong</name>
+        <id direction="Serverbound" state="Status">
+            <hex>0x01</hex>
+        </id>
+        <field type="Long">
+            <name>Payload</name>
+        </field>
+    </packet>
+
+    <!-- Serverbound Status -->
+    <packet generator="on">
+        <name>Request</name>
+        <id direction="Serverbound" state="Status">
+            <hex>0x00</hex>
+        </id>
+    </packet>
+
+    <packet generator="on">
+        <name>Ping</name>
+        <id direction="Serverbound" state="Status">
+            <hex>0x01</hex>
+        </id>
+        <field type="Long">
+            <name>Payload</name>
+        </field>
+    </packet>
+
+    <!-- Clientbound Login -->
+    <packet generator="on">
+        <name>DisconnectLogin</name>
+        <id direction="Clientbound" state="Login">
+            <hex>0x00</hex>
+        </id>
+        <field type="String">
+            <name>Reason</name>
+        </field>
+    </packet>
+
+    <!-- TODO EncryptionRequest -->
+
+    <packet generator="on">
+        <name>LoginSuccess</name>
+        <description>
+                This packet switches the connection state to play.
+        </description>
+        <id direction="Clientbound" state="Login">
+            <hex>0x02</hex>
+        </id>
+        <field type="String">
+            <name>UUID</name>
+            <description>
+                    Unlike in other packets, this field contains the UUID as a
+                    string with hyphens.
+            </description>
+        </field>
+        <field type="String">
+            <name>Username</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>SetCompression</name>
+        <id direction="Clientbound" state="Login">
+            <hex>0x03</hex>
+        </id>
+        <field type="VarInt">
+            <name>Treshold</name>
+        </field>
+    </packet>
+
+    <!-- TODO LoginPluginRequest -->
+
+    <!-- Serverbound Status -->
+    <packet generator="on">
+        <name>LoginStart</name>
+        <id direction="Serverbound" state="Login">
+            <hex>0x00</hex>
+        </id>
+        <field type="String">
+            <name>Name</name>
+        </field>
+    </packet>
+
+    <!-- TODO EncryptionResponse -->
+
+    <!-- TODO LoginPluginResponse -->
+
+    <!-- Clientbound Play -->
+    <packet generator="on">
+        <name>SpawnObject</name>
+        <description>
+                Sent by the server when a vehicle or other object is created.
+        </description>
+        <id direction="Clientbound" state="Play">
+            <hex>0x00</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+            <description>
+                    EID of the object
+            </description>
+        </field>
+        <!-- TODO uuid -->
+        <field type="VarInt">
+            <name>Type</name>
+            <description>
+                    The type of object (same as in Spawn Mob)
+            </description>
+        </field>
+        <field type="Double">
+            <name>X</name>
+        </field>
+        <field type="Double">
+            <name>Y</name>
+        </field>
+        <field type="Double">
+            <name>Z</name>
+        </field>
+        <field type="Angle">
+            <name>Pitch</name>
+        </field>
+        <field type="Angle">
+            <name>Yaw</name>
+        </field>
+        <field type="Int">
+            <name>Data</name>
+        </field>
+        <field type="Short">
+            <name>VX</name>
+        </field>
+        <field type="Short">
+            <name>VY</name>
+        </field>
+        <field type="Short">
+            <name>VZ</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>SpawnExperienceOrb</name>
+        <description>
+                Spawns one or more experience orbs.
+        </description>
+        <id direction="Clientbound" state="Play">
+            <hex>0x01</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="Double">
+            <name>X</name>
+        </field>
+        <field type="Double">
+            <name>Y</name>
+        </field>
+        <field type="Double">
+            <name>Z</name>
+        </field>
+        <field type="Short">
+            <name>Count</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>SpawnGlobalEntity</name>
+        <description>
+                With this packet, the server notifies the client of thunderbolts striking within a 512 block radius around the player. The coordinates specify where exactly the thunderbolt strikes.
+        </description>
+        <id direction="Clientbound" state="Play">
+            <hex>0x02</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="Byte">
+            <name>Type</name>
+            <description>
+                    With this packet, the server notifies the client of thunderbolts striking within a 512 block radius around the player. The coordinates specify where exactly the thunderbolt strikes.
+            </description>
+        </field>
+        <field type="Double">
+            <name>X</name>
+        </field>
+        <field type="Double">
+            <name>Y</name>
+        </field>
+        <field type="Double">
+            <name>Z</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>SpawnMob</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x03</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="UUID">
+            <name>EntityUUID</name>
+        </field>
+        <field type="VarInt">
+            <name>Type</name>
+        </field>
+        <field type="Double">
+            <name>X</name>
+        </field>
+        <field type="Double">
+            <name>Y</name>
+        </field>
+        <field type="Double">
+            <name>Z</name>
+        </field>
+        <field type="Angle">
+            <name>Yaw</name>
+        </field>
+        <field type="Angle">
+            <name>Pitch</name>
+        </field>
+        <field type="Angle">
+            <name>HeadPitch</name>
+        </field>
+        <field type="Short">
+            <name>VelocityX</name>
+        </field>
+        <field type="Short">
+            <name>VelocityY</name>
+        </field>
+        <field type="Short">
+            <name>VelocityZ</name>
+        </field>
+        <field type="EntityMetadata">
+            <name>Metadata</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>SpawnPainting</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x04</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="UUID">
+            <name>EntityUUID</name>
+        </field>
+        <field type="VarInt">
+            <name>Motive</name>
+        </field>
+        <field type="Position">
+            <name>Location</name>
+        </field>
+        <field type="Byte">
+            <name>Direction</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>SpawnPlayer</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x05</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="UUID">
+            <name>PlayerUUID</name>
+        </field>
+        <field type="Double">
+            <name>X</name>
+        </field>
+        <field type="Double">
+            <name>Y</name>
+        </field>
+        <field type="Double">
+            <name>Z</name>
+        </field>
+        <field type="Angle">
+            <name>Yaw</name>
+        </field>
+        <field type="Angle">
+            <name>Pitch</name>
+        </field>
+        <field type="EntityMetadata">
+            <name>Metadata</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>AnimationClientbound</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x06</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="UnsignedByte">
+            <name>Animation</name>
+        </field>
+    </packet>
+
+    <!-- TODO Statistics -->
+
+    <packet generator="on">
+        <name>BlockBreakAnimation</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x08</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="Position">
+            <name>Location</name>
+        </field>
+        <field type="Byte">
+            <name>DestroyStage</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>UpdateBlockEntity</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x09</hex>
+        </id>
+        <field type="Position">
+            <name>Location</name>
+        </field>
+        <field type="UnsignedByte">
+            <name>Action</name>
+        </field>
+        <field type="NBTTag">
+            <name>NBTData</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>BlockAction</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x0A</hex>
+        </id>
+        <field type="Position">
+            <name>Location</name>
+        </field>
+        <field type="UnsignedByte">
+            <name>ActionID</name>
+        </field>
+        <field type="UnsignedByte">
+            <name>ActionParam</name>
+        </field>
+        <field type="VarInt">
+            <name>BlockType</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>BlockChange</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x0B</hex>
+        </id>
+        <field type="Position">
+            <name>Location</name>
+        </field>
+        <field type="VarInt">
+            <name>BlockID</name>
+        </field>
+    </packet>
+
+    <!-- TODO Boss Bar -->
+
+    <packet generator="on">
+        <name>ServerDifficulty</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x0D</hex>
+        </id>
+        <field type="UnsignedByte">
+            <name>Difficulty</name>
+        </field>
+        <field type="Boolean">
+            <name>DifficultyLocked</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>ChatMessageClientbound</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x0E</hex>
+        </id>
+        <field type="String"> <!-- TODO This should be chat -->
+            <name>JSONData</name>
+        </field>
+        <field type="Byte">
+            <name>Position</name>
+        </field>
+    </packet>
+
+    <!-- TODO MultiBlockChange -->
+
+    <!-- TODO TabCompleteClientbound -->
+
+    <!-- TODO DeclareCommands -->
+
+    <packet generator="on">
+        <name>ConfirmTransactionClientbound</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x12</hex>
+        </id>
+        <field type="Byte">
+            <name>WindowID</name>
+        </field>
+        <field type="Short">
+            <name>ActionNumber</name>
+        </field>
+        <field type="Boolean">
+            <name>Accepted</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>CloseWindowClientbound</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x13</hex>
+        </id>
+        <field type="UnsignedByte">
+            <name>WindowID</name>
+        </field>
+    </packet>
+
+    <!-- TODO WindowItems -->
+
+    <packet generator="on">
+        <name>WindowProperty</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x15</hex>
+        </id>
+        <field type="UnsignedByte">
+            <name>WindowID</name>
+        </field>
+        <field type="Short">
+            <name>Property</name>
+        </field>
+        <field type="Short">
+            <name>Value</name>
+        </field>
+    </packet>
+
+    <!-- TODO SetSlot -->
+
+    <packet generator="on">
+        <name>SetCooldown</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x17</hex>
+        </id>
+        <field type="VarInt">
+            <name>ItemID</name>
+        </field>
+        <field type="VarInt">
+            <name>CooldownTicks</name>
+        </field>
+    </packet>
+
+    <!-- TODO PluginMessageClientbound -->
+
+    <packet generator="on">
+        <name>NamedSoundEffect</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x19</hex>
+        </id>
+        <field type="Identifier">
+            <name>SoundName</name>
+        </field>
+        <field type="VarInt">
+            <name>SoundCategory</name>
+        </field>
+        <field type="Int">
+            <name>EffectPositionX</name>
+        </field>
+        <field type="Int">
+            <name>EffectPositionY</name>
+        </field>
+        <field type="Int">
+            <name>EffectPositionZ</name>
+        </field>
+        <field type="Float">
+            <name>Volume</name>
+        </field>
+        <field type="Float">
+            <name>Pitch</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>DisconnectPlay</name>
+        <description>
+                Sent by the server before it disconnects a client.
+                The client assumes that the server has already closed the
+                connection by the time the packet arrives.
+        </description>
+        <id direction="Clientbound" state="Play">
+            <hex>0x1A</hex>
+        </id>
+        <field type="String">
+            <name>Reason</name>
+            <description>
+                    Displayed to the client when the connection terminates.
+            </description>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>EntityStatus</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x1B</hex>
+        </id>
+        <field type="Int">
+            <name>EID</name>
+        </field>
+        <field type="Byte">
+            <name>EntityStatus</name>
+        </field>
+    </packet>
+
+    <!-- TODO <packet generator="on">
+        <name>Explosion</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x1C</hex>
+        </id>
+        <field type="Float">
+            <name>X</name>
+        </field>
+        <field type="Float">
+            <name>Y</name>
+        </field>
+        <field type="Float">
+            <name>Z</name>
+        </field>
+        <field type="Float">
+            <name>Radius</name>
+        </field>
+        <field type="Array Byte">
+            <name>Records</name>
+        </field>
+        <field type="Float">
+            <name>PlayerMotionX</name>
+        </field>
+        <field type="Float">
+            <name>PlayerMotionY</name>
+        </field>
+        <field type="Float">
+            <name>PlayerMotionZ</name>
+        </field> -->
+
+    <packet generator="on">
+        <name>UnloadChunk</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x1D</hex>
+        </id>
+        <field type="Int">
+            <name>ChunkX</name>
+        </field>
+        <field type="Int">
+            <name>ChunkZ</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>ChangeGameState</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x1E</hex>
+        </id>
+        <field type="UnsignedByte">
+            <name>Reason</name>
+        </field>
+        <field type="Float">
+            <name>Value</name>
+        </field>
+    </packet>
+
+    <!-- TODO OpenHorseWindow -->
+
+    <packet generator="on">
+        <name>KeepAliveClientbound</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x20</hex>
+        </id>
+        <field type="Long">
+            <name>KeepAliveID</name>
+        </field>
+    </packet>
+
+    <packet generator="off">
+        <name>ChunkData</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x21</hex>
+        </id>
+        <field type="Int">
+            <name>X</name>
+        </field>
+        <field type="Int">
+            <name>Y</name>
+        </field>
+        <field type="Boolean">
+            <name>FullChunk</name>
+        </field>
+        <field type="VarInt">
+            <name>PrimaryBitMask</name>
+        </field>
+        <field type="Array NBT">
+            <name>Heightmaps</name>
+        </field>
+        <field type="Array Byte">
+            <name>Data</name>
+        </field>
+        <field type="Array NBT">
+            <name>BlockEntities</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>Effect</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x22</hex>
+        </id>
+        <field type="Int">
+            <name>EffectID</name>
+        </field>
+        <field type="Position">
+            <name>Location</name>
+        </field>
+        <field type="Int">
+            <name>Data</name>
+        </field>
+        <field type="Boolean">
+            <name>DisableRelativeVolume</name>
+        </field>
+    </packet>
+
+    <packet generator="off">
+        <name>Particle</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x23</hex>
+        </id>
+        <field type="Int">
+            <name>ParticleID</name>
+        </field>
+        <field type="Boolean">
+            <name>LongDistance</name>
+        </field>
+        <field type="Float">
+            <name>X</name>
+        </field>
+        <field type="Float">
+            <name>Y</name>
+        </field>
+        <field type="Float">
+            <name>Z</name>
+        </field>
+        <field type="Float">
+            <name>OffsetX</name>
+        </field>
+        <field type="Float">
+            <name>OffsetY</name>
+        </field>
+        <field type="Float">
+            <name>OffsetZ</name>
+        </field>
+        <field type="Float">
+            <name>ParticleData</name>
+        </field>
+        <field type="Int">
+            <name>ParticleCount</name>
+        </field>
+        <field type="interface">
+            <name>Data</name>
+        </field>
+    </packet>
+
+    <!-- TODO UpdateLight -->
+
+    <packet generator="on">
+        <name>JoinGame</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x25</hex>
+        </id>
+        <field type="Int">
+            <name>EID</name>
+        </field>
+        <field type="UnsignedByte">
+            <name>Gamemode</name>
+        </field>
+        <field type="Int">
+            <name>Dimension</name>
+        </field>
+        <field type="UnsignedByte">
+            <name>MaxPlayers</name>
+        </field>
+        <field type="String">
+            <name>LevelType</name>
+        </field>
+        <field type="VarInt">
+            <name>ViewDistance</name>
+        </field>
+        <field type="Boolean">
+            <name>ReducedDebugInfo</name>
+        </field>
+    </packet>
+
+    <!-- TODO MapData -->
+
+    <!-- TODO TradeList -->
+
+    <packet generator="on">
+        <name>EntityRelativeMove</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x28</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="Short">
+            <name>DeltaX</name>
+        </field>
+        <field type="Short">
+            <name>DeltaY</name>
+        </field>
+        <field type="Short">
+            <name>DeltaZ</name>
+        </field>
+        <field type="Boolean">
+            <name>OnGround</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>EntityLookAndRelativeMove</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x29</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="Short">
+            <name>DeltaX</name>
+        </field>
+        <field type="Short">
+            <name>DeltaY</name>
+        </field>
+        <field type="Short">
+            <name>DeltaZ</name>
+        </field>
+        <field type="Angle">
+            <name>Yaw</name>
+        </field>
+        <field type="Angle">
+            <name>Pitch</name>
+        </field>
+        <field type="Boolean">
+            <name>OnGround</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>EntityLook</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x2A</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+        <field type="Angle">
+            <name>Yaw</name>
+        </field>
+        <field type="Angle">
+            <name>Pitch</name>
+        </field>
+        <field type="Boolean">
+            <name>OnGround</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>Entity</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x2B</hex>
+        </id>
+        <field type="VarInt">
+            <name>EID</name>
+        </field>
+    </packet>
+
+    <!-- XXX -->
+
+    <packet generator="on">
+        <name>PlayerAbilities</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x31</hex>
+        </id>
+        <field type="Byte">
+            <name>Flags</name>
+        </field>
+        <field type="Float">
+            <name>FlyingSpeed</name>
+        </field>
+        <field type="Float">
+            <name>FieldOfViewModifier</name>
+        </field>
+    </packet>
+
+    <packet generator="off">
+        <name>PluginMessageClientbound</name>
+        <description>
+                Main article: https://wiki.vg/Plugin_channels
+                Mods and plugins can use this to send their data. Minecraft itself
+                uses several plugin channels. These internal channels are in the
+                minecraft namespace.
+
+                More documentation on this:
+                http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/
+        </description>
+        <id direction="Clientbound" state="Play">
+            <hex>0x18</hex>
+        </id>
+        <field type="Identifier">
+            <name>Channel</name>
+            <description>
+                    Name of the plugin channel used to send the data
+            </description>
+        </field>
+        <field type="Array Byte">
+            <name>Data</name>
+            <description>
+                    Any data, depending on the channel. minecraft: channels are
+                    documented here: https://wiki.vg/Plugin_channels. The length of
+                    this array must be inferred from the packet length.
+            </description>
+        </field>
+    </packet>
+
+
+    <packet generator="on">
+        <name>PlayerPositionAndLookClientbound</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x35</hex>
+        </id>
+        <field type="Double">
+            <name>X</name>
+        </field>
+        <field type="Double">
+            <name>Y</name>
+        </field>
+        <field type="Double">
+            <name>Z</name>
+        </field>
+        <field type="Float">
+            <name>Yaw</name>
+        </field>
+        <field type="Float">
+            <name>Pitch</name>
+        </field>
+        <field type="Byte">
+            <name>Flags</name>
+        </field>
+        <field type="VarInt">
+            <name>TeleportID</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>HeldItemChangeClientbound</name>
+        <description>
+                Sent to change the player's slot selection.
+        </description>
+        <id direction="Clientbound" state="Play">
+            <hex>0x3F</hex>
+        </id>
+        <field type="Byte">
+            <name>Slot</name>
+            <description>
+                    The slot which the player has selected (0–8)
+            </description>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>SpawnPosition</name>
+        <id direction="Clientbound" state="Play">
+            <hex>0x4D</hex>
+        </id>
+        <field type="Position">
+            <name>Location</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>TeleportConfirm</name>
+        <description>
+                Sent by client as confirmation of PlayerPositionAndLookClientbound.
+        </description>
+        <id direction="Serverbound" state="Play">
+            <hex>0x00</hex>
+        </id>
+        <field type="VarInt">
+            <name>TeleportID</name>
+            <description>
+                    The ID given by the PlayerPositionAndLookClientbound packet
+            </description>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>ClientStatus</name>
+        <id direction="Serverbound" state="Play">
+            <hex>0x04</hex>
+        </id>
+        <field type="VarInt">
+            <name>ActionID</name>
+            <description>
+                    Action ID values:
+                    Action ID | Action          | Notes
+                    ----------------------------------------------------------------
+                    0         | Perform respawn | Sent when the client is ready to complete login and when the client is ready to respawn after death.
+                    1         | Request stats   | Sent when the client opens the Statistics menu
+            </description>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>ClientSettings</name>
+        <id direction="Serverbound" state="Play">
+            <hex>0x05</hex>
+        </id>
+        <field type="String">
+            <name>Locale</name>
+        </field>
+        <field type="Byte">
+            <name>ViewDistance</name>
+        </field>
+        <field type="VarInt">
+            <name>ChatMode</name>
+        </field>
+        <field type="Boolean">
+            <name>ChatColors</name>
+        </field>
+        <field type="UnsignedByte">
+            <name>DisplaySkinParts</name>
+        </field>
+        <field type="VarInt">
+            <name>MainHand</name>
+        </field>
+    </packet>
+
+    <packet generator="off">
+        <name>PluginMessageServerbound</name>
+        <description>
+                Main article: https://wiki.vg/Plugin_channels
+
+                Mods and plugins can use this to send their data.
+                Minecraft itself uses some plugin channels.
+                These internal channels are in the minecraft namespace.
+
+                More documentation on this:
+                http://dinnerbone.com/blog/2012/01/13/minecraft-plugin-channels-messaging/
+
+                Note that the length of Data is known only from the packet length,
+                since the packet has no length field of any kind.
+        </description>
+        <id direction="Serverbound" state="Play">
+            <hex>0x0B</hex>
+        </id>
+        <field type="Identifier">
+            <name>Channel</name>
+            <description>
+                    Name of the plugin channel used to send the data
+            </description>
+        </field>
+        <field type="Array Byte">
+            <name>Data</name>
+            <description>
+                    Any data, depending on the channel. minecraft: channels are
+                    documented here: https://wiki.vg/Plugin_channels. The length of
+                    this array must be inferred from the packet length.
+            </description>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>AnimationServerbound</name>
+        <id direction="Serverbound" state="Play">
+            <hex>0x2A</hex>
+        </id>
+        <field type="VarInt">
+            <name>Hand</name>
+        </field>
+    </packet>
+
+    <packet generator="on">
+        <name>PlayerPositionAndLookServerbound</name>
+        <id direction="Serverbound" state="Play">
+            <hex>0x12</hex>
+        </id>
+        <field type="Double">
+            <name>X</name>
+        </field>
+        <field type="Double">
+            <name>Y</name>
+        </field>
+        <field type="Double">
+            <name>Z</name>
+        </field>
+        <field type="Float">
+            <name>Yaw</name>
+        </field>
+        <field type="Float">
+            <name>Pitch</name>
+        </field>
+        <field type="Boolean">
+            <name>OnGround</name>
+        </field>
+    </packet>
+</packets>

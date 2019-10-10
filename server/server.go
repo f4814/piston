@@ -1,22 +1,31 @@
 package server
 
 import (
-	"net"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/f4814n/piston/protocol"
+	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"runtime"
+	"runtime/debug"
 )
 
 type Server struct {
 }
 
-func (s *Server) Serve() {
+func (s *Server) Serve(address string) {
+	buildInfo, _ := debug.ReadBuildInfo()
 	log.WithFields(log.Fields{
-		"cpus": runtime.NumCPU(),
+		"cpus":    runtime.NumCPU(),
+		"os":      runtime.GOOS,
+		"arch":    runtime.GOARCH,
+		"go":      runtime.Version(),
+		"version": buildInfo.Main.Version,
 	}).Info("Starting Piston")
 
-	ln, err := net.Listen("tcp", "192.168.122.107:25565")
+	log.WithFields(log.Fields{
+		"address": address,
+	}).Info("Listening for connections")
+	ln, err := protocol.Listen(address)
 
 	if err != nil {
 		log.Fatal(err)
@@ -29,102 +38,105 @@ func (s *Server) Serve() {
 			log.Error(err)
 		}
 
-		c, err := protocol.NewConnection(conn.(*net.TCPConn))
 		if err != nil {
 			log.Error(err)
 			continue
 		}
 
-		go s.waitForPackets(c)
+		go s.handleConnection(conn)
 	}
 }
 
-func (s *Server) waitForPackets(c *protocol.Connection) {
-	c.GetLogger().Debug("Connection initiated")
-	defer c.Close()
+func (s *Server) handleConnection(conn *protocol.Conn) {
+	defer conn.Close()
 
-	for {
-		p, err := c.ReadPacket();
-		if err != nil {
-			if err.Error() != "EOF" {
-				c.GetLogger().Error(err)
-			}
-			return
-		}
-		s.handlePacket(c, p)
+	p, err := conn.ReadPacket()
+	if err != nil {
+		conn.GetLogger().Error(err)
+		return
 	}
-}
 
-func (s *Server) handlePacket(c *protocol.Connection, p protocol.Packet) {
-	switch c.State {
-	case protocol.Handshaking:
-		handleHandshakingPacket(c, p)
-	case protocol.Status:
-		handleStatusPacket(c, p)
-	case protocol.Login:
-		handleLoginPacket(c, p)
-	case protocol.Play:
-		handlePlayPacket(c, p)
-	}
-}
-
-func handleHandshakingPacket(c *protocol.Connection, p protocol.Packet) {
 	v := p.(protocol.Handshake) // No other packets in this state
-	next := v.NextState
-
-	if next == 1 {
-		c.GetLogger().WithFields(log.Fields{
+	if v.NextState == 1 {       // Client only attempts SLP
+		conn.GetLogger().WithFields(log.Fields{
 			"state": protocol.Status,
-		}).Debug("Switching Connection state")
-		c.State = protocol.Status
-	} else {
-		c.GetLogger().WithFields(log.Fields{
-			"state": protocol.Login,
-		}).Debug("Switching Connection state")
-		c.State = protocol.Login
+		}).Trace("Switching Connection state")
+		conn.State = protocol.Status
+		s.status(conn)
+		return // No further communication
+	}
+
+	// Client wants to login
+	conn.GetLogger().WithFields(log.Fields{
+		"state": protocol.Login,
+	}).Trace("Switching Connection state")
+	conn.State = protocol.Login
+	player, err := s.login(conn)
+	if err != nil {
+		conn.GetLogger().Error(err)
+		return
+	}
+
+	conn.GetLogger().WithFields(log.Fields{
+		"state": protocol.Play,
+	}).Trace("Switching connection state")
+	conn.State = protocol.Play
+	player.Start() // Blocks until player disconnects
+}
+
+// Handle Server list ping
+func (s *Server) status(conn *protocol.Conn) {
+	p, err := conn.ReadPacket()
+	if err != nil {
+		conn.GetLogger().Error(err)
+		return
+	}
+
+	// protocol.Request has no fields. So we cannot assign a variable
+	if _, ok := p.(protocol.Request); !ok {
+		conn.GetLogger().Error(err)
+		return
+	}
+	status := protocol.ResponseJSON{}
+	status.Version.Name = "piston"
+	status.Version.Protocol = 498
+	status.Description.Text = "hi"
+	b, _ := json.Marshal(status)
+	err = conn.WritePacket(&protocol.Response{JSONResponse: string(b)})
+	if err != nil {
+		conn.GetLogger().Error(err)
+		return
+	}
+
+	p, err = conn.ReadPacket()
+	if err != nil {
+		conn.GetLogger().Error(err)
+		return
+	}
+
+	v := p.(protocol.Ping)
+	err = conn.WritePacket(protocol.Pong(v))
+	if err != nil {
+		conn.GetLogger().Error(err)
 	}
 }
 
-func handleStatusPacket(c *protocol.Connection, p protocol.Packet) {
-	switch p.(type) {
-	case protocol.Request:
-		status := protocol.ResponseJSON{}
-		status.Version.Name = "lool"
-		status.Version.Protocol = 242
-		status.Description.Text = "hi"
-		b, _ := json.Marshal(status)
-
-		err := c.WritePacket(protocol.Response{string(b)})
-
-		if err != nil {
-			c.GetLogger().Error(err)
-		}
+// Authenticate a client
+func (s *Server) login(conn *protocol.Conn) (Player, error) {
+	p, err := conn.ReadPacket()
+	if err != nil {
+		return Player{}, err
 	}
-}
 
-func handleLoginPacket(c *protocol.Connection, p protocol.Packet) {
-	switch v := p.(type) {
-	case protocol.LoginStart:
-		c.WritePacket(protocol.LoginSuccess{UUID: "123e4567-e89b-12d3-a456-426655440000", Username: v.Name})
-		c.GetLogger().WithFields(log.Fields{
-			"state": protocol.Play,
-		}).Debug("Switching Connection state")
-		c.State = protocol.Play
-		err := c.WritePacket(protocol.JoinGame{
-			EID: 6,
-			Gamemode: 0,
-			Dimension: 0,
-			LevelType: "default",
-			ViewDistance: 10,
-			ReducedDebugInfo: false,
-		})
-
-		if err != nil {
-			c.GetLogger().Error(err)
-		}
-			
+	v := p.(protocol.LoginStart)
+	namespace, _ := uuid.Parse("6ba7b814-9dad-11d1-80b4-00c04fd430c8")
+	uuid := uuid.NewSHA1(namespace, []byte(v.Name))
+	err = conn.WritePacket(protocol.LoginSuccess{UUID: uuid.String(), Username: v.Name})
+	if err != nil {
+		return Player{}, err
 	}
-}
 
-func handlePlayPacket(c *protocol.Connection, p protocol.Packet) {
+	player := NewPlayer(v.Name, uuid, conn)
+
+	return player, nil
 }

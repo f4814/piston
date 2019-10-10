@@ -1,14 +1,16 @@
 package protocol
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/Tnze/go-mc/nbt"
 	"io"
 	"math"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Tnze/go-mc/nbt"
 )
 
 func readBoolean(r io.Reader) (bool, error) {
@@ -108,10 +110,7 @@ func readDouble(r io.Reader) (float64, error) {
 	return math.Float64frombits(uint64(u)), nil
 }
 
-func readString(r interface {
-	io.Reader
-	io.RuneReader
-}) (string, error) {
+func readString(r io.Reader) (string, error) {
 	runes, err := readVarInt(r)
 	if err != nil {
 		return "", err
@@ -119,13 +118,18 @@ func readString(r interface {
 
 	var result string
 	for ; runes > 0; runes-- {
-		r, _, err := r.ReadRune()
+		n := make([]byte, 1)
+		_, err := io.ReadFull(r, n)
+
 		if err != nil {
 			return "", err
 		}
 
-		result += string(r)
+		if n[0] < utf8.RuneSelf {
+			result += string(rune(n[0]))
+		}
 	}
+
 	return result, nil
 }
 
@@ -133,10 +137,7 @@ func readChat(r io.Reader) (string, error) {
 	return "", errors.New("Not implemented")
 }
 
-func readIdentifier(r interface {
-	io.Reader
-	io.RuneReader
-}) (string, error) {
+func readIdentifier(r io.Reader) (string, error) {
 	temp, err := readString(r)
 
 	if err != nil {
@@ -156,7 +157,7 @@ func readVarInt(r io.Reader) (int32, error) {
 	for i := 0; i < 5; i++ {
 		_, err := r.Read(buf)
 		if err != nil {
-			return 0, errors.New("fail")
+			return 0, err
 		}
 		b := buf[0]
 
@@ -282,24 +283,26 @@ func writeDouble(w io.Writer, f float64) error {
 	return writeLong(w, int64(math.Float64bits(f)))
 }
 
-func writeString(w *bytes.Buffer, s string) error {
+func writeString(w io.Writer, s string) error {
 	runes := len(s)
 
 	err := writeVarInt(w, int32(runes))
-
 	if err != nil {
 		return err
 	}
 
+	wb := bufio.NewWriter(w)
+
 	for s != "" {
 		r, l := utf8.DecodeRuneInString(s)
 		s = s[l:]
-		_, err := w.WriteRune(r)
+		_, err := wb.WriteRune(r)
 		if err != nil {
 			return err
 		}
 	}
 
+	wb.Flush()
 	return nil
 }
 
@@ -307,7 +310,7 @@ func writeChat(w *bytes.Buffer, s string) error {
 	return errors.New("not implemented")
 }
 
-func writeIdentifier(w *bytes.Buffer, s string) error {
+func writeIdentifier(w io.Writer, s string) error {
 	return writeString(w, s)
 }
 
